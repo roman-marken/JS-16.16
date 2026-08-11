@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOM Events — Практика</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+        *{box-sizing:border-box;margin:0;padding:0}
+
+        :root{
+            --bg:#060812;
+            --card:rgba(15,23,42,.72);
+            --card2:rgba(255,255,255,.035);
+            --line:rgba(255,255,255,.09);
+            --text:#f8fafc;
+            --muted:#94a3b8;
+            --purple:#8b5cf6;
+            --cyan:#06b6d4;
+            --green:#22c55e;
+            --red:#f43f5e;
+        }
+
+        body{
+            min-height:100vh;
+            font-family:"Manrope",sans-serif;
+            color:var(--text);
+            background:
+                    radial-gradient(circle at 10% 0%,rgba(139,92,246,.18),transparent 28%),
+                    radial-gradient(circle at 90% 15%,rgba(6,182,212,.12),transparent 25%),
+                    radial-gradient(circle at 50% 100%,rgba(34,197,94,.07),transparent 30%),
+                    var(--bg);
+            overflow-x:hidden;
+        }
+
+        body:before{
+            content:"";
+            position:fixed;
+            inset:0;
+            pointer-events:none;
+            background-image:
+                    linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+                    linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+            background-size:42px 42px;
+            mask-image:linear-gradient(#000,transparent);
+        }
+
+        header{
+            padding:24px 30px;
+        }
+
+        .nav{
+            max-width:1250px;
+            margin:auto;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .logo{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            font-weight:800;
+        }
+
+        .logo-icon{
+            width:44px;
+            height:44px;
+            display:grid;
+            place-items:center;
+            border-radius:14px;
+            background:linear-gradient(135deg,var(--purple),var(--cyan));
+            box-shadow:0 12px 35px rgba(139,92,246,.3);
+        }
+
+        .status{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            padding:9px 13px;
+            border:1px solid var(--line);
+            border-radius:999px;
+            color:var(--muted);
+            font-size:10px;
+            background:rgba(255,255,255,.03);
+        }
+
+        .status span{
+            width:7px;
+            height:7px;
+            border-radius:50%;
+            background:var(--green);
+            box-shadow:0 0 15px var(--green);
+        }
+
+        main{
+            width:min(1250px,calc(100% - 40px));
+            margin:35px auto 80px;
+        }
+
+        .hero{
+            position:relative;
+            overflow:hidden;
+            padding:60px 55px;
+            border:1px solid var(--line);
+            border-radius:34px;
+            background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(6,182,212,.04)),var(--card);
+            backdrop-filter:blur(20px);
+            box-shadow:0 35px 100px rgba(0,0,0,.28);
+            animation:appear .7s ease;
+        }
+
+        .hero:after{
+            content:"";
+            position:absolute;
+            width:340px;
+            height:340px;
+            right:-120px;
+            top:-160px;
+            border-radius:50%;
+            background:rgba(139,92,246,.17);
+            filter:blur(65px);
+        }
+
+        .badge{
+            position:relative;
+            z-index:2;
+            display:inline-block;
+            padding:8px 12px;
+            border:1px solid rgba(139,92,246,.25);
+            border-radius:999px;
+            color:#c4b5fd;
+            background:rgba(139,92,246,.08);
+            font-size:10px;
+            font-weight:800;
+            letter-spacing:.12em;
+            text-transform:uppercase;
+        }
+
+        h1{
+            position:relative;
+            z-index:2;
+            margin-top:20px;
+            max-width:850px;
+            font-size:clamp(40px,6vw,70px);
+            line-height:.98;
+            letter-spacing:-.055em;
+        }
+
+        .gradient{
+            color:transparent;
+            background:linear-gradient(100deg,#fff,#c4b5fd,#67e8f9);
+            -webkit-background-clip:text;
+        }
+
+        .hero p{
+            position:relative;
+            z-index:2;
+            max-width:720px;
+            margin-top:22px;
+            color:var(--muted);
+            font-size:14px;
+            line-height:1.8;
+        }
+
+        .tags{
+            position:relative;
+            z-index:2;
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+            margin-top:28px;
+        }
+
+        .tag{
+            padding:9px 12px;
+            border:1px solid var(--line);
+            border-radius:10px;
+            color:#cbd5e1;
+            background:rgba(255,255,255,.035);
+            font-size:10px;
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:18px;
+            margin-top:20px;
+        }
+
+        .card{
+            position:relative;
+            overflow:hidden;
+            padding:25px;
+            border:1px solid var(--line);
+            border-radius:25px;
+            background:var(--card);
+            backdrop-filter:blur(18px);
+            box-shadow:0 20px 60px rgba(0,0,0,.15);
+            animation:appear .6s both;
+        }
+
+        .card:nth-child(2){animation-delay:.06s}
+        .card:nth-child(3){animation-delay:.12s}
+        .card:nth-child(4){animation-delay:.18s}
+        .card:nth-child(5){animation-delay:.24s}
+
+        .card-number{
+            color:#8b5cf6;
+            font-size:10px;
+            font-weight:800;
+            letter-spacing:.1em;
+        }
+
+        .card h2{
+            margin-top:7px;
+            font-size:18px;
+            letter-spacing:-.025em;
+        }
+
+        .description{
+            margin-top:7px;
+            color:var(--muted);
+            font-size:10px;
+            line-height:1.6;
+        }
+
+        .demo{
+            margin-top:20px;
+            padding:18px;
+            border:1px solid var(--line);
+            border-radius:17px;
+            background:rgba(2,6,23,.38);
+        }
+
+        button{
+            border:0;
+            cursor:pointer;
+            color:#fff;
+            font:700 10px "Manrope";
+            padding:11px 14px;
+            border-radius:10px;
+            transition:.25s;
+        }
+
+        button:hover{
+            transform:translateY(-2px);
+        }
+
+        .primary{
+            background:linear-gradient(135deg,var(--purple),#7c3aed);
+        }
+
+        .secondary{
+            background:rgba(255,255,255,.06);
+            border:1px solid var(--line);
+        }
+
+        .danger{
+            background:rgba(244,63,94,.1);
+            color:#fda4af;
+            border:1px solid rgba(244,63,94,.18);
+        }
+
+        .result{
+            margin-top:12px;
+            padding:12px;
+            min-height:40px;
+            border-radius:10px;
+            background:rgba(255,255,255,.035);
+            color:#cbd5e1;
+            font-size:10px;
+            line-height:1.6;
+            white-space:pre-wrap;
+        }
+
+        .data-box{
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+        }
+
+        .data-item{
+            padding:12px 14px;
+            border:1px solid var(--line);
+            border-radius:12px;
+            background:rgba(255,255,255,.035);
+            cursor:pointer;
+            transition:.25s;
+        }
+
+        .data-item.active{
+            border-color:rgba(139,92,246,.5);
+            background:rgba(139,92,246,.12);
+            transform:translateY(-3px);
+        }
+
+        .event-zone{
+            position:relative;
+            min-height:130px;
+            display:grid;
+            place-items:center;
+            border:1px dashed rgba(255,255,255,.13);
+            border-radius:15px;
+            color:#cbd5e1;
+            overflow:hidden;
+            cursor:crosshair;
+        }
+
+        .event-point{
+            position:absolute;
+            width:8px;
+            height:8px;
+            border-radius:50%;
+            background:#67e8f9;
+            box-shadow:0 0 20px #06b6d4;
+            transform:translate(-50%,-50%);
+            pointer-events:none;
+        }
+
+        .key-display{
+            text-align:center;
+        }
+
+        .key-display strong{
+            display:block;
+            font-size:30px;
+            margin-bottom:5px;
+        }
+
+        .link-area a{
+            color:#67e8f9;
+            text-decoration:none;
+        }
+
+        .link-area a:hover{
+            text-decoration:underline;
+        }
+
+        .stop-zone{
+            padding:18px;
+            border-radius:14px;
+            background:rgba(139,92,246,.07);
+            border:1px solid rgba(139,92,246,.14);
+        }
+
+        .parent{
+            padding:20px;
+            border:1px solid rgba(6,182,212,.2);
+            border-radius:14px;
+            background:rgba(6,182,212,.04);
+        }
+
+        .child{
+            margin-top:12px;
+            padding:15px;
+            border-radius:11px;
+            background:rgba(255,255,255,.06);
+        }
+
+        .style-preview{
+            width:100%;
+            height:80px;
+            border-radius:15px;
+            background:#8b5cf6;
+            transition:.3s;
+            box-shadow:0 15px 35px rgba(139,92,246,.2);
+        }
+
+        .controls{
+            display:grid;
+            gap:13px;
+            margin-top:15px;
+        }
+
+        .control{
+            display:grid;
+            grid-template-columns:30px 1fr 40px;
+            align-items:center;
+            gap:10px;
+            color:#cbd5e1;
+            font-size:10px;
+        }
+
+        input[type=range]{
+            width:100%;
+            accent-color:var(--purple);
+        }
+
+        .color-value{
+            text-align:right;
+            font-family:monospace;
+            color:#94a3b8;
+        }
+
+        .animated-box{
+            width:60px;
+            height:60px;
+            margin:10px auto;
+            border-radius:16px;
+            background:linear-gradient(135deg,var(--purple),var(--cyan));
+        }
+
+        .animate{
+            animation:floatBox 1.4s ease-in-out infinite alternate;
+        }
+
+        .calculator{
+            grid-column:1/-1;
+        }
+
+        .calc{
+            max-width:440px;
+            margin:auto;
+        }
+
+        .display{
+            width:100%;
+            height:70px;
+            padding:15px;
+            border:1px solid var(--line);
+            border-radius:15px;
+            background:#020617;
+            color:#fff;
+            text-align:right;
+            font:700 27px monospace;
+            outline:none;
+        }
+
+        .calc-grid{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:8px;
+            margin-top:10px;
+        }
+
+        .calc-grid button{
+            min-height:52px;
+            font-size:13px;
+            background:rgba(255,255,255,.05);
+            border:1px solid var(--line);
+        }
+
+        .calc-grid button.operator{
+            background:rgba(139,92,246,.15);
+            color:#c4b5fd;
+        }
+
+        .calc-grid button.equal{
+            grid-column:span 2;
+            background:linear-gradient(135deg,var(--purple),var(--cyan));
+        }
+
+        .task{
+            grid-column:1/-1;
+        }
+
+        .task-list{
+            display:grid;
+            gap:10px;
+            margin-top:15px;
+        }
+
+        .task-item{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            padding:14px;
+            border:1px solid var(--line);
+            border-radius:13px;
+            background:rgba(255,255,255,.025);
+        }
+
+        .task-item.completed{
+            opacity:.5;
+            text-decoration:line-through;
+        }
+
+        .task-actions{
+            display:flex;
+            gap:6px;
+        }
+
+        footer{
+            margin-top:25px;
+            text-align:center;
+            color:#475569;
+            font-size:10px;
+        }
+
+        @keyframes appear{
+            from{opacity:0;transform:translateY(18px)}
+            to{opacity:1;transform:none}
+        }
+
+        @keyframes floatBox{
+            from{transform:translateY(0) rotate(-5deg)}
+            to{transform:translateY(-30px) rotate(8deg)}
+        }
+
+        @media(max-width:800px){
+            .grid{grid-template-columns:1fr}
+            .calculator,.task{grid-column:auto}
+        }
+
+        @media(max-width:600px){
+            header{padding:18px 15px}
+            main{width:calc(100% - 24px);margin-top:20px}
+            .hero{padding:38px 23px;border-radius:25px}
+            .card{padding:19px}
+            .status{display:none}
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="nav">
+        <div class="logo">
+            <div class="logo-icon">⚡</div>
+            <span>DOM <span style="color:#a78bfa">EVENTS</span></span>
+        </div>
+
+        <div class="status">
+            <span></span>
+            Интерактивная практика
+        </div>
+    </div>
+</header>
+
+<main>
+
+    <section class="hero">
+        <div class="badge">JavaScript · DOM · Events</div>
+
+        <h1>
+            События,
+            <span class="gradient">интерактивность</span>
+            и DOM
+        </h1>
+
+        <p>
+            Практическая лаборатория по обработке событий JavaScript:
+            data-атрибуты, classList, addEventListener, объект event,
+            координаты мыши, клавиатура, preventDefault, делегирование,
+            управление стилями и анимациями.
+        </p>
+
+        <div class="tags">
+            <div class="tag">📦 data-attributes</div>
+            <div class="tag">🎯 classList</div>
+            <div class="tag">🖱️ Events</div>
+            <div class="tag">⌨️ Keyboard</div>
+            <div class="tag">🚫 preventDefault</div>
+            <div class="tag">🎨 Styles</div>
+        </div>
+    </section>
+
+    <div class="grid">
+
+        <section class="card">
+            <div class="card-number">01 / DATA</div>
+            <h2>📦 Data-атрибуты</h2>
+            <p class="description">Работа с dataset и HTML5 data-атрибутами.</p>
+
+            <div class="demo">
+                <div class="data-box">
+                    <div class="data-item" data-name="Алексей" data-role="Разработчик">👤 Алексей</div>
+                    <div class="data-item" data-name="Мария" data-role="Дизайнер">🎨 Мария</div>
+                    <div class="data-item" data-name="Дмитрий" data-role="Менеджер">💼 Дмитрий</div>
+                </div>
+                <div class="result" id="dataResult">Нажмите на элемент</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-number">02 / EVENTS</div>
+            <h2>🖱️ События</h2>
+            <p class="description">Обработчики событий и addEventListener.</p>
+
+            <div class="demo">
+                <button class="primary" id="eventButton">Нажми на меня</button>
+                <button class="secondary" id="secondHandler">Ещё обработчик</button>
+                <div class="result" id="eventResult">Ожидание события...</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-number">03 / EVENT OBJECT</div>
+            <h2>🎯 Объект event</h2>
+            <p class="description">Координаты мыши и события клавиатуры.</p>
+
+            <div class="demo">
+                <div class="event-zone" id="mouseZone">
+                    Двигайте мышью внутри области
+                </div>
+                <div class="result" id="mouseResult">X: — | Y: —</div>
+
+                <div class="key-display">
+                    <strong id="keyValue">—</strong>
+                    <span style="color:#64748b;font-size:10px">Нажмите любую клавишу</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-number">04 / PREVENT</div>
+            <h2>🚫 Запрет стандартного поведения</h2>
+            <p class="description">preventDefault, stopPropagation и делегирование.</p>
+
+            <div class="demo">
+                <div class="link-area">
+                    <a href="https://example.com" id="preventLink">Попробовать открыть ссылку</a>
+                </div>
+
+                <div class="stop-zone" id="parentZone">
+                    Родительский блок
+                    <div class="child" id="childZone">
+                        Нажмите на дочерний элемент
+                    </div>
+                </div>
+
+                <div class="result" id="preventResult">События ещё не происходили</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-number">05 / STYLES</div>
+            <h2>🎨 Управление стилями</h2>
+            <p class="description">style, classList, RGB-слайдеры и CSS-анимации.</p>
+
+            <div class="demo">
+                <div class="style-preview" id="stylePreview"></div>
+
+                <div class="controls">
+                    <div class="control">
+                        <span>R</span>
+                        <input type="range" min="0" max="255" value="139" id="red">
+                        <span class="color-value" id="redValue">139</span>
+                    </div>
+
+                    <div class="control">
+                        <span>G</span>
+                        <input type="range" min="0" max="255" value="92" id="green">
+                        <span class="color-value" id="greenValue">92</span>
+                    </div>
+
+                    <div class="control">
+                        <span>B</span>
+                        <input type="range" min="0" max="255" value="246" id="blue">
+                        <span class="color-value" id="blueValue">246</span>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:15px">
+                    <button class="primary" id="classButton">Переключить класс</button>
+                    <button class="secondary" id="animationButton">Анимация</button>
+                </div>
+
+                <div class="result" id="styleResult">RGB: 139, 92, 246</div>
+            </div>
+        </section>
+
+        <section class="card calculator">
+            <div class="card-number">06 / COMPLEX PRACTICE</div>
+            <h2>🧮 Интерактивный калькулятор</h2>
+            <p class="description">Комплексная практика обработки событий и работы с DOM.</p>
+
+            <div class="demo calc">
+                <input class="display" id="calcDisplay" value="0" readonly>
+
+                <div class="calc-grid">
+                    <button data-action="clear">C</button>
+                    <button data-action="delete">⌫</button>
+                    <button class="operator" data-value="%">%</button>
+                    <button class="operator" data-value="/">÷</button>
+
+                    <button data-value="7">7</button>
+                    <button data-value="8">8</button>
+                    <button data-value="9">9</button>
+                    <button class="operator" data-value="*">×</button>
+
+                    <button data-value="4">4</button>
+                    <button data-value="5">5</button>
+                    <button data-value="6">6</button>
+                    <button class="operator" data-value="-">−</button>
+
+                    <button data-value="1">1</button>
+                    <button data-value="2">2</button>
+                    <button data-value="3">3</button>
+                    <button class="operator" data-value="+">+</button>
+
+                    <button data-value="0">0</button>
+                    <button data-value=".">.</button>
+                    <button class="equal" data-action="calculate">=</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card task">
+            <div class="card-number">PRACTICE</div>
+            <h2>🧪 Самостоятельные задания</h2>
+            <p class="description">
+                Все пять практических задач объединены в один интерактивный блок.
+            </p>
+
+            <div class="task-list" id="taskList">
+                <div class="task-item">
+                    <span>📌 Задание 1: Data-атрибуты</span>
+                    <div class="task-actions">
+                        <button class="primary taskDone">Выполнить</button>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span>📌 Задание 2: События</span>
+                    <div class="task-actions">
+                        <button class="primary taskDone">Выполнить</button>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span>📌 Задание 3: Объект event</span>
+                    <div class="task-actions">
+                        <button class="primary taskDone">Выполнить</button>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span>📌 Задание 4: Запрет</span>
+                    <div class="task-actions">
+                        <button class="primary taskDone">Выполнить</button>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <span>📌 Задание 5: Стили</span>
+                    <div class="task-actions">
+                        <button class="primary taskDone">Выполнить</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        DOM Events · Практическая работа · JavaScript
+    </footer>
+
+</main>
+
+<script>
+    const dataItems = document.querySelectorAll(".data-item");
+    const dataResult = document.getElementById("dataResult");
+
+    dataItems.forEach(item => {
+        item.addEventListener("click", event => {
+            dataItems.forEach(element => element.classList.remove("active"));
+            event.currentTarget.classList.add("active");
+
+            const data = event.currentTarget.dataset;
+
+            dataResult.textContent =
+                `Имя: ${data.name}\nРоль: ${data.role}\nЭлемент: ${event.currentTarget.tagName}`;
+        });
+    });
+
+    const eventButton = document.getElementById("eventButton");
+    const secondHandler = document.getElementById("secondHandler");
+    const eventResult = document.getElementById("eventResult");
+
+    eventButton.addEventListener("click", () => {
+        eventResult.textContent = "✅ Первый обработчик сработал";
+    });
+
+    eventButton.addEventListener("click", () => {
+        eventResult.textContent += "\n⚡ Второй обработчик тоже сработал";
+    });
+
+    secondHandler.addEventListener("click", () => {
+        eventResult.textContent = "🎯 Событие обработано через addEventListener";
+    });
+
+    const mouseZone = document.getElementById("mouseZone");
+    const mouseResult = document.getElementById("mouseResult");
+
+    mouseZone.addEventListener("mousemove", event => {
+        const rect = mouseZone.getBoundingClientRect();
+        const x = Math.round(event.clientX - rect.left);
+        const y = Math.round(event.clientY - rect.top);
+
+        mouseResult.textContent = `X: ${x}px | Y: ${y}px | clientX: ${event.clientX} | clientY: ${event.clientY}`;
+
+        const point = mouseZone.querySelector(".event-point") || document.createElement("div");
+
+        point.className = "event-point";
+        point.style.left = `${x}px`;
+        point.style.top = `${y}px`;
+
+        if(!point.parentElement){
+            mouseZone.appendChild(point);
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        document.getElementById("keyValue").textContent =
+            event.key === " " ? "Space" : event.key;
+    });
+
+    const preventLink = document.getElementById("preventLink");
+    const parentZone = document.getElementById("parentZone");
+    const childZone = document.getElementById("childZone");
+    const preventResult = document.getElementById("preventResult");
+
+    preventLink.addEventListener("click", event => {
+        event.preventDefault();
+        preventResult.textContent = "🚫 preventDefault(): переход по ссылке отменён";
+    });
+
+    parentZone.addEventListener("click", () => {
+        preventResult.textContent = "👨 Сработало событие родительского элемента";
+    });
+
+    childZone.addEventListener("click", event => {
+        event.stopPropagation();
+        preventResult.textContent = "⏹️ stopPropagation(): событие остановлено на дочернем элементе";
+    });
+
+    const stylePreview = document.getElementById("stylePreview");
+    const red = document.getElementById("red");
+    const green = document.getElementById("green");
+    const blue = document.getElementById("blue");
+    const styleResult = document.getElementById("styleResult");
+
+    function updateColor(){
+        const r = red.value;
+        const g = green.value;
+        const b = blue.value;
+
+        stylePreview.style.background = `rgb(${r}, ${g}, ${b})`;
+        stylePreview.style.boxShadow = `0 15px 35px rgba(${r}, ${g}, ${b}, .3)`;
+
+        document.getElementById("redValue").textContent = r;
+        document.getElementById("greenValue").textContent = g;
+        document.getElementById("blueValue").textContent = b;
+
+        styleResult.textContent = `RGB: ${r}, ${g}, ${b}`;
+    }
+
+    [red,green,blue].forEach(input => {
+        input.addEventListener("input", updateColor);
+    });
+
+    document.getElementById("classButton").addEventListener("click", () => {
+        stylePreview.classList.toggle("active-style");
+
+        if(stylePreview.classList.contains("active-style")){
+            stylePreview.style.transform = "scale(1.05) rotate(2deg)";
+            styleResult.textContent += " | classList: active-style добавлен";
+        }else{
+            stylePreview.style.transform = "";
+            styleResult.textContent += " | classList: active-style удалён";
+        }
+    });
+
+    document.getElementById("animationButton").addEventListener("click", () => {
+        stylePreview.classList.remove("animate");
+        void stylePreview.offsetWidth;
+        stylePreview.classList.add("animate");
+
+        setTimeout(() => {
+            stylePreview.classList.remove("animate");
+        },1400);
+    });
+
+    const calcDisplay = document.getElementById("calcDisplay");
+    const calc = document.querySelector(".calc-grid");
+
+    let expression = "";
+
+    calc.addEventListener("click", event => {
+        const button = event.target.closest("button");
+
+        if(!button){
+            return;
+        }
+
+        const value = button.dataset.value;
+        const action = button.dataset.action;
+
+        if(action === "clear"){
+            expression = "";
+            calcDisplay.value = "0";
+            return;
+        }
+
+        if(action === "delete"){
+            expression = expression.slice(0,-1);
+            calcDisplay.value = expression || "0";
+            return;
+        }
+
+        if(action === "calculate"){
+            try{
+                if(!expression){
+                    return;
+                }
+
+                const result = Function(`"use strict"; return (${expression})`)();
+
+                if(!Number.isFinite(result)){
+                    throw new Error("Некорректный результат");
+                }
+
+                expression = String(result);
+                calcDisplay.value = expression;
+            }catch{
+                expression = "";
+                calcDisplay.value = "Ошибка";
+            }
+
+            return;
+        }
+
+        if(value){
+            if(calcDisplay.value === "Ошибка"){
+                expression = "";
+            }
+
+            expression += value;
+            calcDisplay.value = expression;
+        }
+    });
+
+    document.querySelectorAll(".taskDone").forEach(button => {
+        button.addEventListener("click", event => {
+            const task = event.currentTarget.closest(".task-item");
+            task.classList.toggle("completed");
+
+            event.currentTarget.textContent =
+                task.classList.contains("completed")
+                    ? "✓ Выполнено"
+                    : "Выполнить";
+        });
+    });
+
+    updateColor();
+</script>
+
+</body>
+</html>
